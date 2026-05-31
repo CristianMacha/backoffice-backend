@@ -5,6 +5,8 @@ import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { FirebaseAuthService } from '../src/contexts/iam/infrastructure/firebase/firebase-auth.service';
 import { FIREBASE_ADMIN } from '../src/contexts/iam/infrastructure/firebase/firebase-admin.provider';
+import { AllExceptionsFilter } from '../src/shared/http/filters/all-exceptions.filter';
+import { TransformInterceptor } from '../src/shared/http/interceptors/transform.interceptor';
 
 describe('Health (e2e)', () => {
   let app: INestApplication;
@@ -20,6 +22,8 @@ describe('Health (e2e)', () => {
 
     app = module.createNestApplication();
     app.setGlobalPrefix('api/v1');
+    app.useGlobalFilters(app.get(AllExceptionsFilter));
+    app.useGlobalInterceptors(app.get(TransformInterceptor));
     await app.init();
     server = app.getHttpServer() as http.Server;
   });

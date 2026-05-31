@@ -9,8 +9,14 @@ import {
   IUserRepository,
   USER_REPOSITORY,
 } from '../../src/contexts/iam/domain/user/user.repository.interface';
+import {
+  IRoleRepository,
+  ROLE_REPOSITORY,
+} from '../../src/contexts/iam/domain/role/role.repository.interface';
 import { UserBuilder } from '../../src/contexts/iam/test/builders/user.builder';
 import { Role as RoleEnum } from '../../src/contexts/iam/domain/role/role.enum';
+import { AllExceptionsFilter } from '../../src/shared/http/filters/all-exceptions.filter';
+import { TransformInterceptor } from '../../src/shared/http/interceptors/transform.interceptor';
 
 type RoleDto = { id: string; name: RoleEnum };
 type PermissionDto = { id: string; name: string };
@@ -21,9 +27,7 @@ type ApiError = { errorCode: string };
 describe('Roles (e2e)', () => {
   let app: INestApplication;
   let server: http.Server;
-  let userRepo: IUserRepository;
   let adminRoleId: string;
-  let adminUserId: string;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })
@@ -43,23 +47,22 @@ describe('Roles (e2e)', () => {
     app.useGlobalPipes(
       new ValidationPipe({ whitelist: true, transform: true }),
     );
+    app.useGlobalFilters(app.get(AllExceptionsFilter));
+    app.useGlobalInterceptors(app.get(TransformInterceptor));
     await app.init();
     server = app.getHttpServer() as http.Server;
 
-    userRepo = module.get<IUserRepository>(USER_REPOSITORY);
+    // Get role IDs directly from the repository — no HTTP request needed here
+    const roleRepo = module.get<IRoleRepository>(ROLE_REPOSITORY);
+    const roles = await roleRepo.findAll();
+    adminRoleId =
+      roles.find((r) => (r.name as RoleEnum) === RoleEnum.SUPER_ADMIN)?.id ??
+      '';
 
-    const rolesRes = await request(server)
-      .get('/api/v1/roles')
-      .set('Authorization', 'Bearer fake-token');
-
-    const adminRole = (rolesRes.body as ApiList<RoleDto>).data.find(
-      (r) => r.name === RoleEnum.SUPER_ADMIN,
-    );
-    adminRoleId = adminRole?.id ?? '';
-
-    adminUserId = crypto.randomUUID();
+    // Seed admin user BEFORE any authenticated HTTP requests
+    const userRepo = module.get<IUserRepository>(USER_REPOSITORY);
     const adminUser = new UserBuilder()
-      .withId(adminUserId)
+      .withId(crypto.randomUUID())
       .withFirebaseUid('admin-firebase-uid')
       .withEmail('admin@test.com')
       .withRoleId(adminRoleId)
