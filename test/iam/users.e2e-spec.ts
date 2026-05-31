@@ -35,9 +35,11 @@ describe('Users (e2e)', () => {
       .overrideProvider(FirebaseAuthService)
       .useValue({
         verifyToken: jest.fn().mockResolvedValue({
-          uid: 'admin-firebase-uid',
-          email: 'admin@test.com',
+          uid: 'users-admin-uid',
+          email: 'users-admin@test.com',
         }),
+        createUser: jest.fn().mockResolvedValue({ uid: 'users-new-uid' }),
+        deleteUser: jest.fn().mockResolvedValue(undefined),
       })
       .compile();
 
@@ -64,8 +66,8 @@ describe('Users (e2e)', () => {
     const userRepo = module.get<IUserRepository>(USER_REPOSITORY);
     const adminUser = new UserBuilder()
       .withId(crypto.randomUUID())
-      .withFirebaseUid('admin-firebase-uid')
-      .withEmail('admin@test.com')
+      .withFirebaseUid('users-admin-uid')
+      .withEmail('users-admin@test.com')
       .withRoleId(adminRoleId)
       .build();
     await userRepo.save(adminUser);
