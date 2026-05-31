@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { FirebaseAuthService } from '../../src/contexts/iam/infrastructure/firebase/firebase-auth.service';
+import { FIREBASE_ADMIN } from '../../src/contexts/iam/infrastructure/firebase/firebase-admin.provider';
 import {
   IUserRepository,
   USER_REPOSITORY,
@@ -26,6 +27,8 @@ describe('Users (e2e)', () => {
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(FIREBASE_ADMIN)
+      .useValue(null)
       .overrideProvider(FirebaseAuthService)
       .useValue({
         verifyToken: jest.fn().mockResolvedValue({
