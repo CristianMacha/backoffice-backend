@@ -104,5 +104,11 @@ jobs:
       - name: Run unit tests
         run: pnpm test --passWithNoTests
 
+      - name: Run migrations
+        run: pnpm migration:run
+
+      - name: Seed data
+        run: pnpm seed
+
       - name: Run e2e tests
         run: pnpm test:e2e --passWithNoTests
