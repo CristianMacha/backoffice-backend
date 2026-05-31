@@ -18,7 +18,7 @@ function isPaginatedResult(
     typeof value === 'object' &&
     value !== null &&
     'data' in value &&
-    Array.isArray((value as { data: unknown }).data) &&
+    Array.isArray(value.data) &&
     'meta' in value &&
     typeof (value as { meta: unknown }).meta === 'object'
   );

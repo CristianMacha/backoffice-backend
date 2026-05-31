@@ -1,3 +1,4 @@
+import * as http from 'http';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
@@ -10,8 +11,15 @@ import {
 import { UserBuilder } from '../../src/contexts/iam/test/builders/user.builder';
 import { Role as RoleEnum } from '../../src/contexts/iam/domain/role/role.enum';
 
+type RoleDto = { id: string; name: RoleEnum };
+type UserDto = { id: string; email: string; roleId: string };
+type ApiList<T> = { data: T[] };
+type ApiItem<T> = { data: T };
+type ApiError = { errorCode: string };
+
 describe('Users (e2e)', () => {
   let app: INestApplication;
+  let server: http.Server;
   let userRepo: IUserRepository;
   let userRoleId: string;
   let adminRoleId: string;
@@ -33,22 +41,18 @@ describe('Users (e2e)', () => {
       new ValidationPipe({ whitelist: true, transform: true }),
     );
     await app.init();
+    server = app.getHttpServer() as http.Server;
 
     userRepo = module.get<IUserRepository>(USER_REPOSITORY);
 
-    // Get role IDs from seeded data
-    const rolesRes = await request(app.getHttpServer())
+    const rolesRes = await request(server)
       .get('/api/v1/roles')
       .set('Authorization', 'Bearer fake-token');
 
-    userRoleId = rolesRes.body.data.find(
-      (r: { name: string }) => r.name === RoleEnum.USER,
-    )?.id;
-    adminRoleId = rolesRes.body.data.find(
-      (r: { name: string }) => r.name === RoleEnum.SUPER_ADMIN,
-    )?.id;
+    const roles = (rolesRes.body as ApiList<RoleDto>).data;
+    userRoleId = roles.find((r) => r.name === RoleEnum.USER)?.id ?? '';
+    adminRoleId = roles.find((r) => r.name === RoleEnum.SUPER_ADMIN)?.id ?? '';
 
-    // Seed an admin user so the guard resolves correctly
     const adminUser = new UserBuilder()
       .withId(crypto.randomUUID())
       .withFirebaseUid('admin-firebase-uid')
@@ -64,7 +68,7 @@ describe('Users (e2e)', () => {
 
   describe('POST /api/v1/users', () => {
     it('creates a new user and returns 201', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .post('/api/v1/users')
         .set('Authorization', 'Bearer any-token')
         .send({
@@ -74,13 +78,14 @@ describe('Users (e2e)', () => {
         })
         .expect(201);
 
-      expect(res.body.data).toHaveProperty('id');
-      expect(res.body.data.email).toBe('newuser@example.com');
-      expect(res.body.data.roleId).toBe(userRoleId);
+      const body = res.body as ApiItem<UserDto>;
+      expect(body.data).toHaveProperty('id');
+      expect(body.data.email).toBe('newuser@example.com');
+      expect(body.data.roleId).toBe(userRoleId);
     });
 
     it('returns 409 when email is already registered', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .post('/api/v1/users')
         .set('Authorization', 'Bearer any-token')
         .send({
@@ -90,11 +95,11 @@ describe('Users (e2e)', () => {
         })
         .expect(409);
 
-      expect(res.body.errorCode).toBe('USER_ALREADY_EXISTS');
+      expect((res.body as ApiError).errorCode).toBe('USER_ALREADY_EXISTS');
     });
 
     it('returns 400 for missing fields', async () => {
-      await request(app.getHttpServer())
+      await request(server)
         .post('/api/v1/users')
         .set('Authorization', 'Bearer any-token')
         .send({ email: 'incomplete@example.com' })
@@ -102,7 +107,7 @@ describe('Users (e2e)', () => {
     });
 
     it('returns 400 for invalid email', async () => {
-      await request(app.getHttpServer())
+      await request(server)
         .post('/api/v1/users')
         .set('Authorization', 'Bearer any-token')
         .send({
@@ -116,8 +121,7 @@ describe('Users (e2e)', () => {
 
   describe('GET /api/v1/users/:id', () => {
     it('returns the user by id', async () => {
-      // First create
-      const created = await request(app.getHttpServer())
+      const created = await request(server)
         .post('/api/v1/users')
         .set('Authorization', 'Bearer any-token')
         .send({
@@ -126,30 +130,31 @@ describe('Users (e2e)', () => {
           roleId: userRoleId,
         });
 
-      const userId = created.body.data.id;
+      const userId = (created.body as ApiItem<UserDto>).data.id;
 
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .get(`/api/v1/users/${userId}`)
         .set('Authorization', 'Bearer any-token')
         .expect(200);
 
-      expect(res.body.data.id).toBe(userId);
-      expect(res.body.data.email).toBe('get@example.com');
+      const body = res.body as ApiItem<UserDto>;
+      expect(body.data.id).toBe(userId);
+      expect(body.data.email).toBe('get@example.com');
     });
 
     it('returns 404 for nonexistent user', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .get(`/api/v1/users/${crypto.randomUUID()}`)
         .set('Authorization', 'Bearer any-token')
         .expect(404);
 
-      expect(res.body.errorCode).toBe('USER_NOT_FOUND');
+      expect((res.body as ApiError).errorCode).toBe('USER_NOT_FOUND');
     });
   });
 
   describe('PATCH /api/v1/users/:id/role', () => {
     it('changes the user role', async () => {
-      const created = await request(app.getHttpServer())
+      const created = await request(server)
         .post('/api/v1/users')
         .set('Authorization', 'Bearer any-token')
         .send({
@@ -158,19 +163,19 @@ describe('Users (e2e)', () => {
           roleId: userRoleId,
         });
 
-      const userId = created.body.data.id;
+      const userId = (created.body as ApiItem<UserDto>).data.id;
 
-      const res = await request(app.getHttpServer())
+      const res = await request(server)
         .patch(`/api/v1/users/${userId}/role`)
         .set('Authorization', 'Bearer any-token')
         .send({ roleId: adminRoleId })
         .expect(200);
 
-      expect(res.body.data.roleId).toBe(adminRoleId);
+      expect((res.body as ApiItem<UserDto>).data.roleId).toBe(adminRoleId);
     });
 
     it('returns 404 for nonexistent user', async () => {
-      await request(app.getHttpServer())
+      await request(server)
         .patch(`/api/v1/users/${crypto.randomUUID()}/role`)
         .set('Authorization', 'Bearer any-token')
         .send({ roleId: userRoleId })

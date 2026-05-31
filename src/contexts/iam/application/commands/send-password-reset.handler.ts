@@ -13,15 +13,18 @@ export interface PasswordResetResult {
 }
 
 @CommandHandler(SendPasswordResetCommand)
-export class SendPasswordResetHandler
-  implements ICommandHandler<SendPasswordResetCommand, PasswordResetResult>
-{
+export class SendPasswordResetHandler implements ICommandHandler<
+  SendPasswordResetCommand,
+  PasswordResetResult
+> {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     private readonly firebaseAuthService: FirebaseAuthService,
   ) {}
 
-  async execute(command: SendPasswordResetCommand): Promise<PasswordResetResult> {
+  async execute(
+    command: SendPasswordResetCommand,
+  ): Promise<PasswordResetResult> {
     const user = await this.userRepository.findById(command.userId);
     if (!user) throw new UserNotFoundException(command.userId);
 

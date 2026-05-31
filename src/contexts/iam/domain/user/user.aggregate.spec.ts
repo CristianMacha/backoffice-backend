@@ -39,7 +39,8 @@ describe('User aggregate', () => {
         roleId: 'r1',
       });
       expect(result.isErr).toBe(true);
-      if (result.isErr) expect(result.error).toBeInstanceOf(InvalidEmailException);
+      if (result.isErr)
+        expect(result.error).toBeInstanceOf(InvalidEmailException);
     });
 
     it('emits UserCreatedEvent', () => {

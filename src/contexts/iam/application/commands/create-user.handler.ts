@@ -15,7 +15,10 @@ import { UserAlreadyExistsException } from '../../domain/exceptions/user-already
 import { RoleNotFoundException } from '../../domain/exceptions/role-not-found.exception';
 
 @CommandHandler(CreateUserCommand)
-export class CreateUserHandler implements ICommandHandler<CreateUserCommand, User> {
+export class CreateUserHandler implements ICommandHandler<
+  CreateUserCommand,
+  User
+> {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     @Inject(ROLE_REPOSITORY) private readonly roleRepository: IRoleRepository,
@@ -58,9 +61,7 @@ export class CreateUserHandler implements ICommandHandler<CreateUserCommand, Use
     }
   }
 
-  private async createFirebaseUser(
-    email: string,
-  ): Promise<{ uid: string }> {
+  private async createFirebaseUser(email: string): Promise<{ uid: string }> {
     try {
       return await this.firebaseAuthService.createUser(email);
     } catch (err: unknown) {

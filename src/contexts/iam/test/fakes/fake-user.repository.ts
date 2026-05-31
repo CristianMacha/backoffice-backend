@@ -8,38 +8,43 @@ import { PaginationParams } from '../../../../shared/utils/pagination';
 export class FakeUserRepository implements IUserRepository {
   private readonly store = new Map<string, User>();
 
-  async findById(id: string): Promise<User | null> {
-    return this.store.get(id) ?? null;
+  findById(id: string): Promise<User | null> {
+    return Promise.resolve(this.store.get(id) ?? null);
   }
 
-  async findByFirebaseUid(uid: string): Promise<User | null> {
-    return [...this.store.values()].find((u) => u.firebaseUid === uid) ?? null;
-  }
-
-  async findByFirebaseUidWithRole(_uid: string): Promise<UserWithRole | null> {
-    return null;
-  }
-
-  async findByEmail(email: string): Promise<User | null> {
-    return (
-      [...this.store.values()].find((u) => u.email.value === email) ?? null
+  findByFirebaseUid(uid: string): Promise<User | null> {
+    return Promise.resolve(
+      [...this.store.values()].find((u) => u.firebaseUid === uid) ?? null,
     );
   }
 
-  async save(user: User): Promise<void> {
-    this.store.set(user.id, user);
+  findByFirebaseUidWithRole(_uid: string): Promise<UserWithRole | null> {
+    return Promise.resolve(null);
   }
 
-  async findAll(
-    params: PaginationParams,
-  ): Promise<{ users: User[]; total: number }> {
+  findByEmail(email: string): Promise<User | null> {
+    return Promise.resolve(
+      [...this.store.values()].find((u) => u.email.value === email) ?? null,
+    );
+  }
+
+  save(user: User): Promise<void> {
+    this.store.set(user.id, user);
+    return Promise.resolve();
+  }
+
+  findAll(params: PaginationParams): Promise<{ users: User[]; total: number }> {
     const all = [...this.store.values()];
     const start = (params.page - 1) * params.limit;
-    return { users: all.slice(start, start + params.limit), total: all.length };
+    return Promise.resolve({
+      users: all.slice(start, start + params.limit),
+      total: all.length,
+    });
   }
 
-  async delete(id: string): Promise<void> {
+  delete(id: string): Promise<void> {
     this.store.delete(id);
+    return Promise.resolve();
   }
 
   seed(user: User): void {

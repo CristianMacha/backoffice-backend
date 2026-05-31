@@ -6,11 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ApiArrayDataResponse,
   ApiDataResponse,
@@ -46,7 +42,7 @@ export class RolesController {
     const roles = await this.queryBus.execute<GetAllRolesQuery, Role[]>(
       new GetAllRolesQuery(),
     );
-    return roles.map(RoleResponseDto.fromDomain);
+    return roles.map((r) => RoleResponseDto.fromDomain(r));
   }
 
   @Get('permissions')
@@ -59,7 +55,7 @@ export class RolesController {
       GetAllPermissionsQuery,
       PermissionEntity[]
     >(new GetAllPermissionsQuery());
-    return permissions.map(PermissionResponseDto.fromDomain);
+    return permissions.map((r) => PermissionResponseDto.fromDomain(r));
   }
 
   @Patch(':id/permissions')

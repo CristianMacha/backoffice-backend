@@ -1,3 +1,4 @@
+import * as http from 'http';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
@@ -6,6 +7,7 @@ import { FirebaseAuthService } from '../src/contexts/iam/infrastructure/firebase
 
 describe('Health (e2e)', () => {
   let app: INestApplication;
+  let server: http.Server;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({ imports: [AppModule] })
@@ -16,6 +18,7 @@ describe('Health (e2e)', () => {
     app = module.createNestApplication();
     app.setGlobalPrefix('api/v1');
     await app.init();
+    server = app.getHttpServer() as http.Server;
   });
 
   afterAll(async () => {
@@ -23,8 +26,8 @@ describe('Health (e2e)', () => {
   });
 
   it('GET /api/v1/health returns service status', async () => {
-    const res = await request(app.getHttpServer()).get('/api/v1/health');
+    const res = await request(server).get('/api/v1/health');
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveProperty('status');
+    expect((res.body as { data: unknown }).data).toHaveProperty('status');
   });
 });

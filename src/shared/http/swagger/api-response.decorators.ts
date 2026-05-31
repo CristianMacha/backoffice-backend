@@ -29,7 +29,6 @@ export function ApiErrorResponses(
   return applyDecorators(...decorators);
 }
 
-
 export function ApiDataResponse<T>(model: Type<T>, status = HttpStatus.OK) {
   return applyDecorators(
     ApiExtraModels(model),

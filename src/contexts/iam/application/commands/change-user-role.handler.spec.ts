@@ -43,7 +43,9 @@ describe('ChangeUserRoleHandler', () => {
 
   it('throws CannotChangeOwnRoleException when user tries to change their own role', async () => {
     await expect(
-      handler.execute(new ChangeUserRoleCommand('user-1', 'any-role', 'user-1')),
+      handler.execute(
+        new ChangeUserRoleCommand('user-1', 'any-role', 'user-1'),
+      ),
     ).rejects.toThrow(CannotChangeOwnRoleException);
   });
 
@@ -52,7 +54,9 @@ describe('ChangeUserRoleHandler', () => {
     roleRepo.seed(role);
 
     await expect(
-      handler.execute(new ChangeUserRoleCommand('nonexistent', 'role-1', 'requester-99')),
+      handler.execute(
+        new ChangeUserRoleCommand('nonexistent', 'role-1', 'requester-99'),
+      ),
     ).rejects.toThrow(UserNotFoundException);
   });
 
@@ -61,7 +65,9 @@ describe('ChangeUserRoleHandler', () => {
     userRepo.seed(user);
 
     await expect(
-      handler.execute(new ChangeUserRoleCommand('user-1', 'nonexistent-role', 'requester-99')),
+      handler.execute(
+        new ChangeUserRoleCommand('user-1', 'nonexistent-role', 'requester-99'),
+      ),
     ).rejects.toThrow(RoleNotFoundException);
   });
 });

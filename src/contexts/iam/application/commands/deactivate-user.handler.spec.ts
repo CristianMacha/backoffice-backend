@@ -26,7 +26,9 @@ describe('DeactivateUserHandler', () => {
       .build();
     userRepo.seed(user);
 
-    const result = await handler.execute(new DeactivateUserCommand('user-1', 'requester-99'));
+    const result = await handler.execute(
+      new DeactivateUserCommand('user-1', 'requester-99'),
+    );
 
     expect(result.status).toBe(UserStatus.INACTIVE);
     const persisted = await userRepo.findById('user-1');

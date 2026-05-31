@@ -12,23 +12,30 @@ import { FirebaseAuthService } from '../../infrastructure/firebase/firebase-auth
 const makePublisher = () =>
   ({ mergeObjectContext: (x: unknown) => x }) as unknown as EventPublisher;
 
-const makeFirebaseAuthService = (uid = 'firebase-uid-generated') =>
+const makeFirebaseAuthService = (
+  uid = 'firebase-uid-generated',
+): jest.Mocked<FirebaseAuthService> =>
   ({
     createUser: jest.fn().mockResolvedValue({ uid }),
     deleteUser: jest.fn().mockResolvedValue(undefined),
-  }) as unknown as FirebaseAuthService;
+  }) as unknown as jest.Mocked<FirebaseAuthService>;
 
 describe('CreateUserHandler', () => {
   let handler: CreateUserHandler;
   let userRepo: FakeUserRepository;
   let roleRepo: FakeRoleRepository;
-  let firebaseAuth: FirebaseAuthService;
+  let firebaseAuth: jest.Mocked<FirebaseAuthService>;
 
   beforeEach(() => {
     userRepo = new FakeUserRepository();
     roleRepo = new FakeRoleRepository();
     firebaseAuth = makeFirebaseAuthService();
-    handler = new CreateUserHandler(userRepo, roleRepo, firebaseAuth, makePublisher());
+    handler = new CreateUserHandler(
+      userRepo,
+      roleRepo,
+      firebaseAuth,
+      makePublisher(),
+    );
   });
 
   it('creates a Firebase user and persists in DB', async () => {
@@ -64,7 +71,9 @@ describe('CreateUserHandler', () => {
 
   it('throws RoleNotFoundException when role does not exist', async () => {
     await expect(
-      handler.execute(new CreateUserCommand('test@example.com', 'nonexistent-role')),
+      handler.execute(
+        new CreateUserCommand('test@example.com', 'nonexistent-role'),
+      ),
     ).rejects.toThrow(RoleNotFoundException);
 
     expect(firebaseAuth.createUser).not.toHaveBeenCalled();
@@ -80,13 +89,15 @@ describe('CreateUserHandler', () => {
     ).rejects.toThrow('DB error');
 
     expect(firebaseAuth.createUser).toHaveBeenCalledWith('fail@example.com');
-    expect(firebaseAuth.deleteUser).toHaveBeenCalledWith('firebase-uid-generated');
+    expect(firebaseAuth.deleteUser).toHaveBeenCalledWith(
+      'firebase-uid-generated',
+    );
   });
 
   it('throws UserAlreadyExistsException when email already exists in Firebase', async () => {
     const role = new RoleBuilder().withId('role-1').build();
     roleRepo.seed(role);
-    (firebaseAuth.createUser as jest.Mock).mockRejectedValueOnce({
+    firebaseAuth.createUser.mockRejectedValueOnce({
       code: 'auth/email-already-exists',
     });
 
