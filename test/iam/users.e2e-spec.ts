@@ -38,7 +38,11 @@ describe('Users (e2e)', () => {
           uid: 'users-admin-uid',
           email: 'users-admin@test.com',
         }),
-        createUser: jest.fn().mockResolvedValue({ uid: 'users-new-uid' }),
+        createUser: jest
+          .fn()
+          .mockImplementation(() =>
+            Promise.resolve({ uid: crypto.randomUUID() }),
+          ),
         deleteUser: jest.fn().mockResolvedValue(undefined),
       })
       .compile();
